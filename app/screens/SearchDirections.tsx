@@ -17,7 +17,7 @@ import {
   addFavoriteDestination,
   addRecentDestination,
   clearDestinations,
-} from "@/storage/storage"; // Assuming these functions exist
+} from "@/storage/storage";
 
 const SearchDirections = () => {
   const router = useRouter();
@@ -32,24 +32,18 @@ const SearchDirections = () => {
 
   const handleSearchDone = async () => {
     if (searchText.trim()) {
-      // Save the search to recent searches and favorites if needed
-      await addRecentDestination(searchText); // Save to recent destinations
-      await addFavoriteDestination(searchText); // Save to favorite destinations (or modify logic to check if it's a favorite)
+      await addRecentDestination(searchText);
 
-      // Update the recent and favorite destinations
       const updatedRecentDestinations = await getRecentDestinations();
-      const updatedFavorites = await getFavoriteDestinations();
 
       setRecentDestinations(updatedRecentDestinations);
-      setFavoriteDestinations(updatedFavorites);
 
-      setSearchText(""); // Clear the input after search is done
-      Keyboard.dismiss(); // Hide the keyboard
+      setSearchText("");
+      Keyboard.dismiss();
     }
   };
 
   useEffect(() => {
-    // Fetch favorite and recent destinations from storage when the component mounts
     const fetchData = async () => {
       console.log("fetching data");
       const favorites = await getFavoriteDestinations();
@@ -59,8 +53,8 @@ const SearchDirections = () => {
       setRecentDestinations(recents);
     };
 
-    fetchData();
-  }, []); // Runs only once when the component mounts
+    fetchData()
+  }, []);
 
   return (
     <View className="bg-[#121212] w-full h-full py-10">
@@ -74,9 +68,9 @@ const SearchDirections = () => {
           placeholderTextColor="gray"
           className="flex-1 bg-secondaryBg text-gray-400 p-5 rounded-lg text-xl ml-2 mr-5"
           autoFocus={true}
-          value={searchText} // Controlled input
-          onChangeText={setSearchText} // Update the searchText on input change
-          onSubmitEditing={handleSearchDone} // When user presses 'Done' or 'Enter'
+          value={searchText}
+          onChangeText={setSearchText}
+          onSubmitEditing={handleSearchDone}
         />
       </View>
 
@@ -101,40 +95,35 @@ const SearchDirections = () => {
           <Text className="text-white text-base">Choose on map</Text>
         </TouchableOpacity>
 
-        <Text className="text-gray-400 mb-4 text-xl mb-8">
-          {favoriteDestinations &&
-          favoriteDestinations.length > 0 &&
-          recentDestinations &&
-          recentDestinations.length > 0
-            ? "Your destinations"
-            : favoriteDestinations && favoriteDestinations.length > 0
-            ? "Favorite destinations"
-            : recentDestinations && recentDestinations.length > 0
-            ? "Recent destinations"
-            : "Search examples"}
-        </Text>
-
-        <View>
+        <>
           {favoriteDestinations && favoriteDestinations.length > 0 && (
-            <SearchFavorites favoriteDestinations={favoriteDestinations} />
+            <>
+              <Text className="text-gray-400 text-xl mb-8">
+                Favorite destinations
+              </Text>
+              <SearchFavorites favoriteDestinations={favoriteDestinations} />
+            </>
           )}
-          {recentDestinations && recentDestinations.length > 0 && (
-            <RecentSearches recentDestinations={recentDestinations} />
-          )}
-          {favoriteDestinations &&
-            favoriteDestinations.length === 0 &&
-            recentDestinations &&
-            recentDestinations.length === 0 && <SearchExamples />}
-        </View>
 
-        <TouchableOpacity className="items-center mt-6">
-          <Text className="text-gray-300">
-            Didn't find what you're looking for?
-          </Text>
-          <TouchableOpacity className="bg-secondary py-4 px-8 rounded-md mt-4">
-            <Text className="text-white font-semibold">Find on Map</Text>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          {recentDestinations && recentDestinations.length > 0 && (
+            <>
+              <Text className="text-gray-400 text-xl mb-8">
+                Recent destinations
+              </Text>
+              <RecentSearches recentDestinations={recentDestinations} />
+            </>
+          )}
+
+          {(!favoriteDestinations || favoriteDestinations.length === 0) &&
+            (!recentDestinations || recentDestinations.length === 0) && (
+              <>
+                <Text className="text-gray-400 text-xl mb-8">
+                  Example searches
+                </Text>
+                <SearchExamples />
+              </>
+            )}
+        </>
       </View>
     </View>
   );

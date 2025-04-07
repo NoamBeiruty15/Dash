@@ -1,7 +1,28 @@
 import { View, Text, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  addFavoriteDestination,
+  removeFavoriteDestination,
+} from "@/storage/storage";
 
 const SearchExamples = () => {
+  const [favoritedStations, setFavoritedStations] = useState([]);
+
+  const handleFavoritePress = (stationName) => {
+    if (favoritedStations.includes(stationName)) {
+      // If the station is already favorited, remove it
+      setFavoritedStations((prev) =>
+        prev.filter((name) => name !== stationName)
+      );
+      removeFavoriteDestination(stationName); // Remove from storage
+    } else {
+      // If the station is not favorited, add it
+      setFavoritedStations((prev) => [...prev, stationName]);
+      addFavoriteDestination(stationName); // Add to storage
+    }
+  };
+
   const stations = [
     { name: "Tel Aviv Savidor Central Railway", type: "Station" },
     { name: "Azrieli Center/Menachem Begin", type: "Station" },
@@ -30,6 +51,19 @@ const SearchExamples = () => {
               <Text className="text-gray-400 text-sm">{station.type}</Text>
             </View>
           </View>
+
+          <TouchableOpacity
+            style={{ marginLeft: "auto" }}
+            onPress={() => handleFavoritePress(station.name)}
+          >
+            <MaterialCommunityIcons
+              name="star"
+              size={24}
+              color={
+                favoritedStations.includes(station.name) ? "#FFD700" : "gray"
+              }
+            />
+          </TouchableOpacity>
         </TouchableOpacity>
       ))}
     </View>
