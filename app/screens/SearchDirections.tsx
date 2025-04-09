@@ -3,9 +3,10 @@ import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
   Keyboard,
+  ScrollView,
 } from "react-native";
+import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import SearchExamples from "@/components/SearchExamples";
@@ -18,37 +19,34 @@ import {
   addRecentDestination,
   clearDestinations,
 } from "@/storage/storage";
+import "react-native-get-random-values";
 
 const SearchDirections = () => {
   const router = useRouter();
+  const API_KEY = "AIzaSyDhCuIXONxDV46tSCgitDIpRCUy7QkiQnk";
 
   const [favoriteDestinations, setFavoriteDestinations] = useState(null);
   const [recentDestinations, setRecentDestinations] = useState(null);
-  const [searchText, setSearchText] = useState(""); // To capture the search input
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleBackArrowPress = () => {
     router.push("/");
   };
 
-  const handleSearchDone = async () => {
-    if (searchText.trim()) {
-      await addRecentDestination(searchText);
+  const handlePlaceSelect = async (data, details = null) => {
+    const description = details?.description || data?.description;
 
-      const updatedRecentDestinations = await getRecentDestinations();
-
-      setRecentDestinations(updatedRecentDestinations);
-
-      setSearchText("");
+    if (description) {
+      await addRecentDestination(description);
       Keyboard.dismiss();
+      router.push(`/empty/${description}`);
     }
   };
 
   useEffect(() => {
     const fetchData = async () => {
-      console.log("fetching data");
       const favorites = await getFavoriteDestinations();
       const recents = await getRecentDestinations();
-
       setFavoriteDestinations(favorites);
       setRecentDestinations(recents);
     };
@@ -57,74 +55,136 @@ const SearchDirections = () => {
   }, []);
 
   return (
-    <View className="bg-[#121212] w-full h-full py-10">
-      <View className="flex-row items-center mb-6 bg-secondaryBg">
-        <TouchableOpacity className="ml-2 p-2" onPress={handleBackArrowPress}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
-        </TouchableOpacity>
+    <View className="bg-background w-full h-full py-10">
+      <ScrollView keyboardShouldPersistTaps="handled">
+        <View className="flex-row items-center mb-6 bg-secondaryBg px-2">
+          <TouchableOpacity
+            className="p-2 absolute top-2"
+            onPress={handleBackArrowPress}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
+          </TouchableOpacity>
 
-        <TextInput
-          placeholder="Where do you want to go?"
-          placeholderTextColor="gray"
-          className="flex-1 bg-secondaryBg text-gray-400 p-5 rounded-lg text-xl ml-2 mr-5"
-          autoFocus={true}
-          value={searchText}
-          onChangeText={setSearchText}
-          onSubmitEditing={handleSearchDone}
-        />
-      </View>
+          <View className="flex-1 ml-2 pl-5 p-2">
+            <GooglePlacesAutocomplete
+              placeholder="Where do you want to go?"
+              fetchDetails={true}
+              onPress={handlePlaceSelect}
+              query={{
+                key: API_KEY,
+                language: "en",
+              }}
+              styles={{
+                textInput: {
+                  backgroundColor: "transparent",
+                  color: "white",
+                  fontSize: 18,
+                  borderBottomWidth: 1,
+                  borderColor: "transparent",
+                  padding: 10,
+                },
+                container: {
+                  flex: 1,
+                  backgroundColor: "#1e1e1e",
+                },
+                listView: {
+                  backgroundColor: "#1c1c1e",
+                  borderRadius: 8,
+                  marginTop: 4,
+                },
+                row: {
+                  backgroundColor: "#1e1e1e", // <- important!
+                  padding: 13,
+                  height: 44,
+                  flexDirection: "row",
+                },
+                description: {
+                  color: "white", // text color in suggestions
+                },
+                separator: {
+                  height: 0.5,
+                  backgroundColor: "#444",
+                },
+              }}
+              textInputProps={{
+                placeholderTextColor: "gray",
+                onFocus: () => setIsFocused(true),
+                onBlur: () => setIsFocused(false),
+              }}
+              enablePoweredByContainer={false}
+            />
+          </View>
+        </View>
 
-      <View className="px-8">
-        <TouchableOpacity className="flex-row items-center border-b border-gray-600 pb-4 mb-4">
-          <MaterialCommunityIcons
-            name="magnify"
-            size={24}
-            color="white"
-            className="mr-3"
-          />
-          <Text className="text-white text-base">Search for a line</Text>
-        </TouchableOpacity>
+        {isFocused ? (
+          ""
+        ) : (
+          <>
+            <View className="px-8">
+              <TouchableOpacity className="flex-row items-center border-b border-gray-600 pb-4 mb-4">
+                <MaterialCommunityIcons
+                  name="magnify"
+                  size={24}
+                  color="white"
+                  className="mr-3"
+                />
+                <Text className="text-white text-base">Search for a line</Text>
+              </TouchableOpacity>
 
-        <TouchableOpacity className="flex-row items-center border-b border-gray-600 pb-4 mb-8">
-          <MaterialCommunityIcons
-            name="map-marker"
-            size={24}
-            color="#ff6200"
-            className="mr-3"
-          />
-          <Text className="text-white text-base">Choose on map</Text>
-        </TouchableOpacity>
+              <TouchableOpacity className="flex-row items-center border-b border-gray-600 pb-4 mb-8">
+                <MaterialCommunityIcons
+                  name="map-marker"
+                  size={24}
+                  color="#ff6200"
+                  className="mr-3"
+                />
+                <Text className="text-white text-base">Choose on map</Text>
+              </TouchableOpacity>
 
-        <>
-          {favoriteDestinations && favoriteDestinations.length > 0 && (
-            <>
-              <Text className="text-gray-400 text-xl mb-8">
-                Favorite destinations
-              </Text>
-              <SearchFavorites favoriteDestinations={favoriteDestinations} />
-            </>
-          )}
-
-          {recentDestinations && recentDestinations.length > 0 && (
-            <>
-              <Text className="text-gray-400 text-xl mb-8">
-                Recent destinations
-              </Text>
-              <RecentSearches recentDestinations={recentDestinations} />
-            </>
-          )}
-
-          {(!favoriteDestinations || favoriteDestinations.length === 0) &&
-            (!recentDestinations || recentDestinations.length === 0) && (
               <>
-                <Text className="text-gray-400 text-xl mb-8">
-                  Example searches
-                </Text>
-                <SearchExamples />
+                {favoriteDestinations && favoriteDestinations.length > 0 && (
+                  <>
+                    <Text className="text-gray-400 text-xl mb-8">
+                      Favorite destinations
+                    </Text>
+                    <SearchFavorites
+                      favoriteDestinations={favoriteDestinations}
+                    />
+                  </>
+                )}
+
+                {recentDestinations && recentDestinations.length > 0 && (
+                  <>
+                    <Text className="text-gray-400 text-xl mb-8">
+                      Recent destinations
+                    </Text>
+                    <RecentSearches recentDestinations={recentDestinations} />
+                  </>
+                )}
+
+                {(!favoriteDestinations || favoriteDestinations.length === 0) &&
+                  (!recentDestinations || recentDestinations.length === 0) && (
+                    <>
+                      <Text className="text-gray-400 text-xl mb-8">
+                        Example searches
+                      </Text>
+                      <SearchExamples />
+                    </>
+                  )}
               </>
-            )}
-        </>
-      </View>
+            </View>
+
+            <View className="items-center mt-5 mb-20">
+              <Text className="text-gray-300 text-center">
+                Didn't find what you're looking for?
+              </Text>
+              <TouchableOpacity className="mt-5 py-4 px-8 bg-secondary rounded-md">
+                <Text className="text-white font-semibold">Find on Map</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </ScrollView>
     </View>
   );
 };

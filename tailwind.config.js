@@ -7,11 +7,11 @@ module.exports = {
       colors: {
         primary: "#007BFF",
         secondary: "#ff6200",
-        background: "#121212",
-        secondaryBg: "#1a1a1a",
+        background: "#141414",
+        secondaryBg: "#1e1e1e",
       },
       spacing: {
-        15: "3rem", // You can adjust the value as you like
+        15: "3rem", 
       },
     },
   },
