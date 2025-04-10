@@ -35,11 +35,16 @@ const SearchDirections = () => {
 
   const handlePlaceSelect = async (data, details = null) => {
     const description = details?.description || data?.description;
+    const { lat, lng } = details?.geometry?.location;
 
-    if (description) {
-      await addRecentDestination(description);
+
+    const destination = {description, lat, lng} 
+    console.log(destination)
+
+    if (destination) {
+      await addRecentDestination(destination);
       Keyboard.dismiss();
-      router.push(`/empty/${description}`);
+      router.push(`/${lat}/${lng}/empty/${description}`);
     }
   };
 
@@ -174,7 +179,7 @@ const SearchDirections = () => {
               </>
             </View>
 
-            <View className="items-center mt-5 mb-20">
+            <View className="items-center mt-5">
               <Text className="text-gray-300 text-center">
                 Didn't find what you're looking for?
               </Text>

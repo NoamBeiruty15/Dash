@@ -36,7 +36,11 @@ const RecentSearches = ({ recentDestinations }) => {
               className={`flex-row justify-between items-center border-b border-gray-600 pb-4 ${
                 index === recentDestinations.length - 1 ? "mb-6" : "mb-4"
               }`}
-              onPress={() => router.push(`/empty/${item}`)}
+              onPress={() =>
+                router.push(
+                  `/${item.lat}/${item.lng}/empty/${item.description}`
+                )
+              }
             >
               <View className="flex-row items-center">
                 <MaterialCommunityIcons
@@ -45,8 +49,10 @@ const RecentSearches = ({ recentDestinations }) => {
                   color="#ff6200"
                   className="mr-3"
                 />
-                <View>
-                  <Text className="text-white text-base">{item}</Text>
+                <View className="">
+                  <Text className="text-white text-base">
+                    {item.description}
+                  </Text>
                   <Text className="text-gray-400 text-sm">Recent search</Text>
                 </View>
               </View>

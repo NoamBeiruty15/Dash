@@ -1,9 +1,12 @@
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import React, { useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { removeFavoriteDestination } from "@/storage/storage";
+import { useRouter } from "expo-router";
 
 const SearchFavorites = ({ favoriteDestinations }) => {
+  const router = useRouter();
+
   const [favoritedItems, setFavoritedItems] = useState(favoriteDestinations);
 
   const handleFavoritePress = (item) => {
@@ -24,6 +27,7 @@ const SearchFavorites = ({ favoriteDestinations }) => {
             className={`flex-row justify-between items-center border-b border-gray-600 pb-4 ${
               index === favoriteDestinations.length - 1 ? "mb-6" : "mb-4"
             }`}
+            onPress={() => router.push(`/${item.lat}/${item.lng}/empty/${item.description}`)}
           >
             <View className="flex-row items-center">
               <MaterialCommunityIcons
@@ -33,7 +37,7 @@ const SearchFavorites = ({ favoriteDestinations }) => {
                 className="mr-3"
               />
               <View>
-                <Text className="text-white text-base">{item}</Text>
+                <Text className="text-white text-base">{item.description}</Text>
                 <Text className="text-gray-400 text-sm">Favorite</Text>
               </View>
             </View>

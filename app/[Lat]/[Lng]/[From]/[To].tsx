@@ -15,12 +15,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 const LocationSelector = () => {
   const router = useRouter();
-  const { From, To } = useLocalSearchParams();
+  const { Lat, Lng, From, To } = useLocalSearchParams();
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [fromLocation, setFromLocation] = useState(From || "");
-  const [toLocation, setToLocation] = useState(To);
+  const [toLocation, setToLocation] = useState(To || "");
+  const API_KEY = "AIzaSyDhCuIXONxDV46tSCgitDIpRCUy7QkiQnk";
 
   useEffect(() => {
     fetchTransitRoutes(toLocation);
@@ -30,24 +31,34 @@ const LocationSelector = () => {
     try {
       setLoading(true);
 
-      const fromLocation = "ה באייר";
-      const fromCoords = await getCoordinates(fromLocation);
+      const fromCoords = { lat: "32.0854651", lng: "34.790197" };
       if (!fromCoords) {
         throw new Error("Unable to find coordinates for 'ה באייר'");
       }
 
-      // Geocode the "to" location (user input)
-      const toCoords = await getCoordinates(toLocation);
-      console.log(toCoords)
-      if (!toCoords) {
-        throw new Error("Unable to find coordinates for destination location");
+      let toCoords; 
+
+      if (To === toLocation) {
+        toCoords = { lat: Lat, lng: Lng };
+        if (!toCoords) {
+          throw new Error(
+            "Unable to find coordinates for destination location"
+          );
+        }
+      } else {
+        console.log("Trying to get new lat, lng");
+        toCoords = await getCoordinatesFromAddress(toLocation);
+        if (!toCoords) {
+          throw new Error(
+            "Unable to find coordinates for destination location"
+          );
+        }
       }
 
-      // Construct the API URL with the lat, lng for fromPlace and toPlace
-      const apiUrl = `https://api.busnearby.co.il/directions?fromPlace=%D7%94%27%20%D7%91%D7%90%D7%99%D7%99%D7%A8%2024%2C%20%D7%AA%D7%9C%20%D7%90%D7%91%D7%99%D7%99%D7%91-%D7%99%D7%A4%D7%95%2C%20${fromCoords.lat}%2C${fromCoords.lng}&toPlace=${toLocation}%2C%20${toCoords.lat}%2C${toCoords.lng}&arriveBy=false&locale=he&wheelchair=false&mode=WALK%2CTRANSIT&showIntermediateStops=true&numItineraries=6&maxWalkDistance=1207&optimize=QUICK&ignoreRealtimeUpdates=false`;
-      console.log(apiUrl)
+      console.log(toCoords)
 
-      // Fetch data from the transit API
+      const apiUrl = `https://api.busnearby.co.il/directions?fromPlace=%D7%94%27%20%D7%91%D7%90%D7%99%D7%99%D7%A8%2024%2C%20%D7%AA%D7%9C%20%D7%90%D7%91%D7%99%D7%99%D7%91-%D7%99%D7%A4%D7%95%2C%20${fromCoords.lat}%2C${fromCoords.lng}&toPlace=${toLocation}%2C%20${toCoords.lat}%2C${toCoords.lng}&arriveBy=false&locale=he&wheelchair=false&mode=WALK%2CTRANSIT&showIntermediateStops=true&numItineraries=6&maxWalkDistance=1207&optimize=QUICK&ignoreRealtimeUpdates=false`;
+
       const response = await fetch(apiUrl);
       if (!response.ok) {
         throw new Error("Failed to fetch transit routes");
@@ -64,40 +75,13 @@ const LocationSelector = () => {
     }
   };
 
-  const getCoordinates = async (location) => {
-    try {
-      // Fetch coordinates for the location using Geoapify API
-      const response = await fetch(
-        `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(
-          location
-        )}&apiKey=b6ec3d66032e4d5fa822dbcdb1172ae1`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch coordinates");
-      }
-      const data = await response.json();
-      const firstResult = data.features[0];
-      if (firstResult) {
-        return {
-          lat: firstResult.geometry.coordinates[1],
-          lng: firstResult.geometry.coordinates[0],
-        };
-      } else {
-        throw new Error("Location not found");
-      }
-    } catch (error) {
-      console.error(error);
-      return null;
-    }
-  };
-
   const getTransitRoutes = (data) => {
     const itineraries = data.plan.itineraries;
     return itineraries.map((itinerary, index) => ({
       id: index,
       duration: Math.round(itinerary.duration / 60), // Convert seconds to minutes
       arrivalTime: formatTime(new Date(itinerary.endTime)),
-      cost: itinerary.fare ? itinerary.fare.fare.regular.cents / 100 : 6.0, // Example cost
+      cost: itinerary.fare ? itinerary.fare.fare.regular.cents / 100 : 6.0,
       legs: itinerary.legs.map((leg) => ({
         mode: leg.mode,
         from: leg.from.name,
@@ -116,6 +100,30 @@ const LocationSelector = () => {
 
   const getNextDepartures = (route) => {
     return [4, 22, 38]; // Mock departure times
+  };
+
+  const getCoordinatesFromAddress = async (address) => {
+    try {
+      const api_url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+        address
+      )}&key=${API_KEY}`;
+      console.log(api_url);
+
+      const response = await fetch(api_url);
+      const data = await response.json();
+
+      if (data.status === "OK") {
+        const { lat, lng } = data.results[0].geometry.location;
+        console.log("Lat:", lat, "Lng:", lng);
+        return { lat, lng };
+      } else {
+        console.error("Geocoding failed:", data.status);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching geocode:", error);
+      return null;
+    }
   };
 
   return (
@@ -153,8 +161,11 @@ const LocationSelector = () => {
               className="flex-1 text-white text-lg"
               placeholder="Choose destination"
               placeholderTextColor="#999"
-              value={toLocation} // Using value instead of defaultValue
-              onChangeText={setToLocation} // To handle the changes
+              value={toLocation as string}
+              onChangeText={setToLocation}
+              onSubmitEditing={() => {
+                fetchTransitRoutes(toLocation);
+              }}
             />
           </View>
         </View>
@@ -186,11 +197,6 @@ const LocationSelector = () => {
                   <Text className="text-gray-400 text-lg ml-3">|</Text>
                   <Text className="text-gray-400 text-lg ml-3">
                     Arrival time: {route.arrivalTime}
-                  </Text>
-                </View>
-                <View className="bg-[#082f4a] px-3 py-1 rounded-md">
-                  <Text className="text-white text-xl">
-                    ₪{route.cost.toFixed(2)}
                   </Text>
                 </View>
               </View>
@@ -232,8 +238,8 @@ const LocationSelector = () => {
                 </View>
               </View>
 
-              <View className="flex-row justify-between items-center">
-                <View className="flex-row items-center">
+              <View className="flex flex-row flex-wrap justify-between items-center">
+                <View className="flex-row flex-wrap items-center">
                   <Text className="text-gray-400">Leaves in </Text>
                   <MaterialCommunityIcons
                     name="wifi"
@@ -247,9 +253,9 @@ const LocationSelector = () => {
                       {i < getNextDepartures(route).length - 1 ? ", " : ""}
                     </Text>
                   ))}
-                  <Text className="text-gray-400 ml-1">
-                    {" "}
-                    min from {route.legs[0].from}
+                  <Text className="text-gray-400 ml-1">min </Text>
+                  <Text className="text-gray-400">
+                    from {route.legs[1].from}
                   </Text>
                 </View>
               </View>
