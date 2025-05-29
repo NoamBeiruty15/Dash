@@ -1,7 +1,7 @@
 # Dash - Moovit Clone
 
 Dash is a **Moovit clone** app built with **React Native** using **Expo**. It helps users plan public transportation routes and track buses in real-time. With an amazing UI and UX
-# 🚍 Dash – Your Personal Transit Companion
+# 🚍 Dash
 
 **Dash** is a slick and powerful **Moovit clone** built with **React Native** and **Expo**. It’s designed to help users effortlessly plan public transportation routes and track buses in real-time — all with a clean, modern UI that makes commuting a breeze.
 
